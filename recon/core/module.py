@@ -65,7 +65,7 @@ class BaseModule(framework.Framework):
     def _parse_frontmatter(self):
         rel_path = '.'.join([self._modulename, 'py'])
         abs_path = os.path.join(self.mod_path, rel_path)
-        with open(abs_path) as fp:
+        with open(abs_path, encoding='UTF-8') as fp:
             state = False
             yaml_src = ''
             for line in fp:
@@ -159,17 +159,11 @@ class BaseModule(framework.Framework):
         prefix = params.split()[0].lower()
         if prefix in ['query', 'default']:
             query = ' '.join(params.split()[1:]) if prefix == 'query' else query
-            try:
-                results = self.query(query)
-            except sqlite3.OperationalError as e:
-                raise framework.FrameworkException(f"Invalid source query. {type(e).__name__} {e}")
-            if not results:
-                sources = []
-            elif len(results[0]) > 1:
-                sources = [x[:len(x)] for x in results]
-                #raise framework.FrameworkException('Too many columns of data as source input.')
-            else:
-                sources = [x[0] for x in results]
+            docs = self.read_doc_ES(os.path.basename(self.workspace), query)
+            sources = []
+            for doc in docs:
+                for value in doc['_source'].values():
+                    sources.append(value)
         elif os.path.exists(params):
             sources = open(params).read().split()
         else:
