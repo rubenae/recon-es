@@ -1,4 +1,4 @@
-__author__    = 'Tim Tomes (@lanmaster53)'
+__author__    = 'Tim Tomes (@lanmaster53), Rubén Álvarez, Rodrigo Baladrón'
 
 from datetime import datetime
 from pathlib import Path
@@ -50,9 +50,9 @@ class Recon(framework.Framework):
 
     repo_url = 'https://raw.githubusercontent.com/lanmaster53/recon-ng-modules/master/'
 
-    def __init__(self, check=True, analytics=True, marketplace=True, accessible=False):
+    def __init__(self, check=True, analytics=False, marketplace=True, accessible=False):
         framework.Framework.__init__(self, 'base')
-        self._name = 'recon-ng'
+        self._name = 'recon-vd'
         self._prompt_template = '{}[{}] > '
         self._base_prompt = self._prompt_template.format('', self._name)
         # set toggle flags
@@ -63,7 +63,7 @@ class Recon(framework.Framework):
         # set path variables
         self.app_path = framework.Framework.app_path = sys.path[0]
         self.core_path = framework.Framework.core_path = os.path.join(self.app_path, 'core')
-        self.home_path = framework.Framework.home_path = os.path.join(os.path.expanduser('~'), '.recon-ng')
+        self.home_path = framework.Framework.home_path = os.path.join(os.path.expanduser('~'), '.recon-vd')
         self.mod_path = framework.Framework.mod_path = os.path.join(self.home_path, 'modules')
         self.data_path = framework.Framework.data_path = os.path.join(self.home_path, 'data')
         self.spaces_path = framework.Framework.spaces_path = os.path.join(self.home_path, 'workspaces')
@@ -107,7 +107,7 @@ class Recon(framework.Framework):
             remote = 0
             local = 0
             try:
-                remote = re.search(pattern, self.request('GET', 'https://raw.githubusercontent.com/lanmaster53/recon-ng/master/VERSION').text).group(1)
+                remote = re.search(pattern, self.request('GET', 'https://raw.githubusercontent.com/rubrod/recon-vd/master/VERSION').text).group(1)
                 local = re.search(pattern, open('VERSION').read()).group(1)
             except Exception as e:
                 self.error(f"Version check failed ({type(e).__name__}).")
@@ -198,6 +198,7 @@ class Recon(framework.Framework):
         if not os.path.exists(path):
             os.makedirs(path)
             self._create_db()
+            self.create_index_ES(workspace)
         else:
             self._migrate_db()
         # set workspace prompt
@@ -232,6 +233,15 @@ class Recon(framework.Framework):
             if re.search(r'^snapshot_\d{14}.db$', f):
                 snapshots.append(f)
         return snapshots
+
+    def create_index_ES(self, index):
+        es = self.connect_ES()
+        try:
+            if not es.indices.exists(index):
+                es.indices.create(index=index)
+                self.alert('Created Index ' + index)
+        except Exception as e:
+            self.error(e)
 
     def _create_db(self):
         self.query('CREATE TABLE IF NOT EXISTS domains (domain TEXT, notes TEXT, module TEXT)')

@@ -1,4 +1,5 @@
 from contextlib import closing
+from elasticsearch import Elasticsearch
 import cmd
 import codecs
 import inspect
@@ -13,6 +14,7 @@ import string
 import subprocess
 import sys
 import traceback
+import hashlib
 
 #=================================================
 # SUPPORT CLASSES
@@ -357,6 +359,54 @@ class Framework(cmd.Cmd):
     #==================================================
     # DATABASE METHODS
     #==================================================
+
+    def connect_ES(self):
+        es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+        return es
+
+    def create_doc_ES(self, index, body, mute=False):
+        es = self.connect_ES()
+        _id = self.create_id(body.copy())
+        try:
+            res = es.index(index=index, id=_id, body=body, op_type='create', refresh='wait_for')
+            if not mute: self.verbose(f"Document created:\n{res}")
+        except Exception as e:
+            if not mute: self.error(e)
+
+    def update_doc_ES(self, index, _id, body, mute=False):
+        es = self.connect_ES()
+        try:
+            res = es.index(index=index, id=_id, body=body, op_type='index', refresh='wait_for')
+            if not mute: self.verbose(f"Document updated:\n{res}")
+        except Exception as e:
+            if not mute: self.error(e)
+
+    def read_doc_ES(self, index, body, mute=False):
+        es = self.connect_ES()
+        try:
+            res = es.search(index=index, body=body, size=10000)
+            hits = res['hits']['hits']
+            if not mute: self.verbose(f"Document(s) read:\n{hits}")
+        except Exception as e:
+            if not mute: self.error(e)
+        #return res
+        return hits
+
+    def delete_doc_ES(self, index, _id, mute=False):
+        es = self.connect_ES()
+        try:
+            res = es.delete(index=index, id=_id)
+            if not mute: self.verbose(f"Document deleted:\n{res}")
+        except Exception as e:
+            if not mute: self.error(e)
+    
+    def create_id(self, data):
+        combined_key = ""
+        data.pop('timestamp', None)
+        for key in data.keys():
+            combined_key += (str(data[key])).lower()
+        _id = hashlib.sha1(combined_key.encode('utf-8')).hexdigest()
+        return _id
 
     def query(self, *args, **kwargs):
         path = os.path.join(self.workspace, 'data.db')
