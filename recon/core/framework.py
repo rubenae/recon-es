@@ -15,6 +15,7 @@ import subprocess
 import sys
 import traceback
 import hashlib
+import datetime
 
 #=================================================
 # SUPPORT CLASSES
@@ -274,9 +275,6 @@ class Framework(cmd.Cmd):
 
     def error(self, line):
         '''Formats and presents errors.'''
-        if not re.search('[.,;!?]$', line):
-            line += '.'
-        line = line[:1].upper() + line[1:]
         print(f"{Colors.R}[!] {line}{Colors.N}")
 
     def output(self, line):
@@ -445,59 +443,147 @@ class Framework(cmd.Cmd):
     #==================================================
     # INSERT METHODS
     #==================================================
+        
+    def date(self):
+        return datetime.datetime.now(datetime.timezone.utc)
 
-    def _display(self, data, rowcount):
-        display = self.alert if rowcount else self.verbose
-        for key in sorted(data.keys()):
-            display(f"{key.title()}: {data[key]}")
-        display(self.ruler*50)
+    def insert_news(self, title=None, url=None, date=None, notes=None, mute=True):
+        '''Adds a news item to the database.'''
+        data = dict(
+            type = 'news',
+            timestamp = self.date(),
+            title = title,
+            url = url,
+            date = date,
+            notes = notes
+        )
+        self.create_doc_ES(os.path.basename(self.workspace), data, mute)
+        #if not mute: self._display(data=data, pattern='[news] %s', keys=data.keys())
 
-    def insert_domains(self, domain=None, notes=None, mute=False):
+    def insert_emails(self, email=None, source=None, notes=None, mute=True):
+        '''Adds a email to the database.'''
+        data = dict(
+            type = 'emails',
+            timestamp = self.date(),
+            email = email,
+            source = source,
+            notes = notes
+        )
+        self.create_doc_ES(os.path.basename(self.workspace), data, mute)
+
+    def insert_documents(self, domain=None, url=None, metadata=None, notes=None, mute=True):
+        '''Adds a document to the database.'''
+        data = dict(
+            type = 'documents',
+            timestamp = self.date(),
+            domain = domain,
+            url = url,
+            metadata = metadata,
+            notes = notes
+        )
+        self.create_doc_ES(os.path.basename(self.workspace), data, mute)
+
+    def insert_similarDomains(self, original_domain=None, similar_domain=None, ips=None, vt_positives=None, snapshot=None, screenshot=None, notes=None, mute=True):
+        '''Adds a similar domain to the database.'''
+        data = dict(
+            type = 'similarDomains',
+            timestamp = self.date(),
+            original_domain = original_domain,
+            similar_domain = similar_domain,
+            ips = ips,
+            vt_positives = vt_positives,
+            snapshot = snapshot,
+            screenshot = screenshot,
+            notes = notes
+        )
+        self.create_doc_ES(os.path.basename(self.workspace), data, mute)
+
+    def insert_pastes(self, title=None, url=None, date=None, content=False, notes=None, mute=True):
+        '''Adds a paste to the database.'''
+        data = dict(
+            type = 'pastes',
+            timestamp = self.date(),
+            title = title,
+            url = url,
+            date = date,
+            content = content,
+            notes = notes
+        )
+        self.create_doc_ES(os.path.basename(self.workspace), data, mute)
+
+    def insert_posts(self, title=None, url=None, date=None, notes=None, mute=True):
+        '''Adds a post to the database.'''
+        data = dict(
+            type = 'posts',
+            timestamp = self.date(),
+            title = title,
+            url = url,
+            date = date,
+            notes = notes
+        )
+        self.create_doc_ES(os.path.basename(self.workspace), data, mute)
+
+    def insert_spamMailServers(self, domain=None, mail_server=None, ip=None, blacklist=None, notes=None, mute=True):
+        '''Adds a spamMailServers to the database.'''
+        data = dict(
+            type = 'spamMailServers',
+            timestamp = self.date(),
+            domain = domain,
+            mail_server = mail_server,
+            ip = ip,
+            blacklist = blacklist,
+            notes = notes
+        )
+        self.create_doc_ES(os.path.basename(self.workspace), data, mute)
+
+    def insert_domains(self, domain=None, notes=None, mute=True):
         '''Adds a domain to the database and returns the affected row count.'''
         data = dict(
+            type = 'domains',
+            timestamp = self.date(),
             domain = domain,
             notes = notes
         )
-        rowcount = self.insert('domains', data.copy(), data.keys())
-        if not mute: self._display(data, rowcount)
-        return rowcount
+        self.create_doc_ES(os.path.basename(self.workspace), data, mute)
 
-    def insert_companies(self, company=None, description=None, notes=None, mute=False):
+    def insert_companies(self, company=None, description=None, notes=None, mute=True):
         '''Adds a company to the database and returns the affected row count.'''
         data = dict(
+            type = 'companies',
+            timestamp = self.date(),
             company = company,
             description = description,
             notes = notes
         )
-        rowcount = self.insert('companies', data.copy(), ('company',))
-        if not mute: self._display(data, rowcount)
-        return rowcount
+        self.create_doc_ES(os.path.basename(self.workspace), data, mute)
 
-    def insert_netblocks(self, netblock=None, notes=None, mute=False):
+    def insert_netblocks(self, netblock=None, notes=None, mute=True):
         '''Adds a netblock to the database and returns the affected row count.'''
         data = dict(
+            type = 'netblocks',
+            timestamp = self.date(),
             netblock = netblock,
             notes = notes
         )
-        rowcount = self.insert('netblocks', data.copy(), data.keys())
-        if not mute: self._display(data, rowcount)
-        return rowcount
+        self.create_doc_ES(os.path.basename(self.workspace), data, mute)
 
-    def insert_locations(self, latitude=None, longitude=None, street_address=None, notes=None, mute=False):
+    def insert_locations(self, latitude=None, longitude=None, street_address=None, notes=None, mute=True):
         '''Adds a location to the database and returns the affected row count.'''
         data = dict(
+            type = 'locations',
+            timestamp = self.date(),
             latitude = latitude,
             longitude = longitude,
             street_address = street_address,
             notes = notes
         )
-        rowcount = self.insert('locations', data.copy(), data.keys())
-        if not mute: self._display(data, rowcount)
-        return rowcount
+        self.create_doc_ES(os.path.basename(self.workspace), data, mute)
 
-    def insert_vulnerabilities(self, host=None, reference=None, example=None, publish_date=None, category=None, status=None, notes=None, mute=False):
+    def insert_vulnerabilities(self, host=None, reference=None, example=None, publish_date=None, category=None, status=None, notes=None, mute=True):
         '''Adds a vulnerability to the database and returns the affected row count.'''
         data = dict(
+            type = 'vulnerabilities',
+            timestamp = self.date(),
             host = host,
             reference = reference,
             example = example,
@@ -506,13 +592,13 @@ class Framework(cmd.Cmd):
             status = status,
             notes = notes
         )
-        rowcount = self.insert('vulnerabilities', data.copy(), data.keys())
-        if not mute: self._display(data, rowcount)
-        return rowcount
+        self.create_doc_ES(os.path.basename(self.workspace), data, mute)
 
-    def insert_ports(self, ip_address=None, host=None, port=None, protocol=None, banner=None, notes=None, mute=False):
+    def insert_ports(self, ip_address=None, host=None, port=None, protocol=None, banner=None, notes=None, mute=True):
         '''Adds a port to the database and returns the affected row count.'''
         data = dict(
+            type = 'ports',
+            timestamp = self.date(),
             ip_address = ip_address,
             port = port,
             host = host,
@@ -520,13 +606,13 @@ class Framework(cmd.Cmd):
             banner = banner,
             notes = notes
         )
-        rowcount = self.insert('ports', data.copy(), ('ip_address', 'port', 'host'))
-        if not mute: self._display(data, rowcount)
-        return rowcount
+        self.create_doc_ES(os.path.basename(self.workspace), data, mute)
 
-    def insert_hosts(self, host=None, ip_address=None, region=None, country=None, latitude=None, longitude=None, notes=None, mute=False):
+    def insert_hosts(self, host=None, ip_address=None, region=None, country=None, latitude=None, longitude=None, notes=None, mute=True):
         '''Adds a host to the database and returns the affected row count.'''
         data = dict(
+            type = 'hosts',
+            timestamp = self.date(),
             host = host,
             ip_address = ip_address,
             region = region,
@@ -535,13 +621,13 @@ class Framework(cmd.Cmd):
             longitude = longitude,
             notes = notes
         )
-        rowcount = self.insert('hosts', data.copy(), ('host', 'ip_address'))
-        if not mute: self._display(data, rowcount)
-        return rowcount
+        self.create_doc_ES(os.path.basename(self.workspace), data, mute)
 
-    def insert_contacts(self, first_name=None, middle_name=None, last_name=None, email=None, title=None, region=None, country=None, phone=None, notes=None, mute=False):
+    def insert_contacts(self, first_name=None, middle_name=None, last_name=None, email=None, title=None, region=None, country=None, notes=None, mute=True):
         '''Adds a contact to the database and returns the affected row count.'''
         data = dict(
+            type = 'contacts',
+            timestamp = self.date(),
             first_name = first_name,
             middle_name = middle_name,
             last_name = last_name,
@@ -549,14 +635,11 @@ class Framework(cmd.Cmd):
             email = email,
             region = region,
             country = country,
-            phone = phone,
             notes = notes
         )
-        rowcount = self.insert('contacts', data.copy(), ('first_name', 'middle_name', 'last_name', 'title', 'email', 'phone'))
-        if not mute: self._display(data, rowcount)
-        return rowcount
+        self.create_doc_ES(os.path.basename(self.workspace), data, mute)
 
-    def insert_credentials(self, username=None, password=None, _hash=None, _type=None, leak=None, notes=None, mute=False):
+    def insert_credentials(self, username=None, password=None, _hash=None, _type=None, leak=None, notes=None, mute=True):
         '''Adds a credential to the database and returns the affected row count.'''
 
         # account for hashes provided in the password field
@@ -573,20 +656,22 @@ class Framework(cmd.Cmd):
             self.insert_contacts(first_name=None, last_name=None, title=None, email=username)
 
         data = dict (
+            type = 'credentials',
+            timestamp = self.date(),
             username = username,
             password = password,
             hash = _hash,
-            type = _type,
+            hash_type = _type,
             leak = leak,
             notes = notes
         )
-        rowcount = self.insert('credentials', data.copy(), data.keys())
-        if not mute: self._display(data, rowcount)
-        return rowcount
+        self.create_doc_ES(os.path.basename(self.workspace), data, mute)
 
-    def insert_leaks(self, leak_id=None, description=None, source_refs=None, leak_type=None, title=None, import_date=None, leak_date=None, attackers=None, num_entries=None, score=None, num_domains_affected=None, attack_method=None, target_industries=None, password_hash=None, password_type=None, targets=None, media_refs=None, notes=None, mute=False):
+    def insert_leaks(self, leak_id=None, description=None, source_refs=None, leak_type=None, title=None, import_date=None, leak_date=None, attackers=None, num_entries=None, score=None, num_domains_affected=None, attack_method=None, target_industries=None, password_hash=None, password_type=None, targets=None, media_refs=None, notes=None, mute=True):
         '''Adds a leak to the database and returns the affected row count.'''
         data = dict(
+            type = 'leaks',
+            timestamp = self.date(),
             leak_id = leak_id,
             description = description,
             source_refs = source_refs,
@@ -606,13 +691,13 @@ class Framework(cmd.Cmd):
             media_refs = media_refs,
             notes = notes
         )
-        rowcount = self.insert('leaks', data.copy(), data.keys())
-        if not mute: self._display(data, rowcount)
-        return rowcount
+        self.create_doc_ES(os.path.basename(self.workspace), data, mute)
 
-    def insert_pushpins(self, source=None, screen_name=None, profile_name=None, profile_url=None, media_url=None, thumb_url=None, message=None, latitude=None, longitude=None, time=None, notes=None, mute=False):
+    def insert_pushpins(self, source=None, screen_name=None, profile_name=None, profile_url=None, media_url=None, thumb_url=None, message=None, latitude=None, longitude=None, time=None, notes=None, mute=True):
         '''Adds a pushpin to the database and returns the affected row count.'''
         data = dict(
+            type = 'pushpins',
+            timestamp = self.date(),
             source = source,
             screen_name = screen_name,
             profile_name = profile_name,
@@ -625,26 +710,26 @@ class Framework(cmd.Cmd):
             time = time.strftime(self.time_format),
             notes = notes
         )
-        rowcount = self.insert('pushpins', data.copy(), data.keys())
-        if not mute: self._display(data, rowcount)
-        return rowcount
+        self.create_doc_ES(os.path.basename(self.workspace), data, mute)
 
-    def insert_profiles(self, username=None, resource=None, url=None, category=None, notes=None, mute=False):
+    def insert_profiles(self, username=None, resource=None, url=None, category=None, notes=None, mute=True):
         '''Adds a profile to the database and returns the affected row count.'''
         data = dict(
+            type = 'profiles',
+            timestamp = self.date(),
             username = username,
             resource = resource,
             url = url,
             category = category,
             notes = notes
         )
-        rowcount = self.insert('profiles', data.copy(), ('username', 'url'))
-        if not mute: self._display(data, rowcount)
-        return rowcount
+        self.create_doc_ES(os.path.basename(self.workspace), data, mute)
 
-    def insert_repositories(self, name=None, owner=None, description=None, resource=None, category=None, url=None, notes=None, mute=False):
+    def insert_repositories(self, name=None, owner=None, description=None, resource=None, category=None, url=None, notes=None, mute=True):
         '''Adds a repository to the database and returns the affected row count.'''
         data = dict(
+            type = 'repositories',
+            timestamp = self.date(),
             name = name,
             owner = owner,
             description = description,
@@ -653,9 +738,7 @@ class Framework(cmd.Cmd):
             url = url,
             notes = notes
         )
-        rowcount = self.insert('repositories', data.copy(), data.keys())
-        if not mute: self._display(data, rowcount)
-        return rowcount
+        self.create_doc_ES(os.path.basename(self.workspace), data, mute)
 
     def insert(self, table, data, unique_columns=[]):
         '''Inserts items into database and returns the affected row count.
