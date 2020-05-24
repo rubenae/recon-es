@@ -52,7 +52,7 @@ class Recon(framework.Framework):
 
     def __init__(self, check=True, analytics=False, marketplace=True, accessible=False):
         framework.Framework.__init__(self, 'base')
-        self._name = 'recon-vd'
+        self._name = 'recon-es'
         self._prompt_template = '{}[{}] > '
         self._base_prompt = self._prompt_template.format('', self._name)
         # set toggle flags
@@ -63,7 +63,7 @@ class Recon(framework.Framework):
         # set path variables
         self.app_path = framework.Framework.app_path = sys.path[0]
         self.core_path = framework.Framework.core_path = os.path.join(self.app_path, 'core')
-        self.home_path = framework.Framework.home_path = os.path.join(os.path.expanduser('~'), '.recon-vd')
+        self.home_path = framework.Framework.home_path = os.path.join(os.path.expanduser('~'), '.recon-es')
         self.mod_path = framework.Framework.mod_path = os.path.join(self.home_path, 'modules')
         self.data_path = framework.Framework.data_path = os.path.join(self.home_path, 'data')
         self.spaces_path = framework.Framework.spaces_path = os.path.join(self.home_path, 'workspaces')
@@ -89,7 +89,7 @@ class Recon(framework.Framework):
         self.register_option('proxy', None, False, 'proxy server (address:port)')
         self.register_option('threads', 10, True, 'number of threads (where applicable)')
         self.register_option('timeout', 10, True, 'socket timeout (seconds)')
-        self.register_option('user-agent', f"Recon-ng/v{__version__.split('.')[0]}", True, 'user-agent string')
+        self.register_option('user-agent', f"Recon-es/v{__version__.split('.')[0]}", True, 'user-agent string')
         self.register_option('verbosity', 1, True, 'verbosity level (0 = minimal, 1 = verbose, 2 = debug)')
 
     def _init_home(self):
@@ -107,13 +107,13 @@ class Recon(framework.Framework):
             remote = 0
             local = 0
             try:
-                remote = re.search(pattern, self.request('GET', 'https://raw.githubusercontent.com/rubrod/recon-vd/master/VERSION').text).group(1)
+                remote = re.search(pattern, self.request('GET', 'https://raw.githubusercontent.com/rubrod/recon-es/master/VERSION').text).group(1)
                 local = re.search(pattern, open('VERSION').read()).group(1)
             except Exception as e:
                 self.error(f"Version check failed ({type(e).__name__}).")
                 #self.print_exception()
             if remote != local:
-                self.alert('Your version of Recon-ng does not match the latest release.')
+                self.alert('Your version of Recon-es does not match the latest release.')
                 self.alert('Please consider updating before further use.')
                 self.output(f"Remote version:  {remote}")
                 self.output(f"Local version:   {local}")
