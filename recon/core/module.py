@@ -165,7 +165,7 @@ class BaseModule(framework.Framework):
                 for value in doc['_source'].values():
                     sources.append(value)
         elif os.path.exists(params):
-            sources = open(params).read().split()
+            sources = open(params, encoding='UTF-8').read().split()
         else:
             sources = [params]
         if not sources:
